@@ -350,6 +350,7 @@
   var FIREBASE = {
     apiKey: "AIzaSyCxB2ihj9dAFfzOFzOlmVdjbnwRDpwOUn8",
     authDomain: "joandy-pnl-projection.firebaseapp.com",
+    databaseURL: "https://joandy-pnl-projection-default-rtdb.firebaseio.com",
     projectId: "joandy-pnl-projection",
     storageBucket: "joandy-pnl-projection.firebasestorage.app",
     messagingSenderId: "205950551822",
@@ -377,11 +378,11 @@
   }
 
   function initCloud() {
-    Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-auth.js'), import(SDK + 'firebase-firestore.js')])
+    Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-auth.js'), import(SDK + 'firebase-database.js')])
     .then(function (m) {
       var A = m[1], F = m[2];
-      var app = m[0].initializeApp(FIREBASE), auth = A.getAuth(app), db = F.getFirestore(app), unsub = null;
-      cloud.setDoc = F.setDoc;
+      var app = m[0].initializeApp(FIREBASE), auth = A.getAuth(app), db = F.getDatabase(app), unsub = null;
+      cloud.setDoc = F.set;
       $('signIn').onclick = function () {
         A.signInWithPopup(auth, new A.GoogleAuthProvider()).catch(function (e) {
           if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
@@ -397,23 +398,23 @@
         $('signIn').hidden = !!user; $('signOut').hidden = !user;
         if (!user) { status('Not signed in. Saved on this device only.'); return; }
         cloud.who = user.email ? '(' + user.email + ')' : '';
-        var ref = F.doc(db, 'users', user.uid);
+        var ref = F.ref(db, 'users/' + user.uid);
         status('Loading your saved figures…');
-        F.getDoc(ref).then(function (snap) {
-          var d = snap.exists() ? snap.data() : null;
+        F.get(ref).then(function (snap) {
+          var d = snap.exists() ? snap.val() : null;
           cloud.ref = ref;
           // Whichever copy was edited last wins: the online one or this device's.
           if (d && d.json && (d.updatedAt || 0) >= (state.updatedAt || 0) && adopt(d.json)) status('Saved online ✓ ' + cloud.who);
           else return cloud.flush();
         }).then(function () {
-          unsub = F.onSnapshot(ref, function (s) {
-            if (s.metadata.hasPendingWrites || cloud.dirty) return;
-            var d = s.data();
+          unsub = F.onValue(ref, function (s) {
+            if (cloud.dirty) return;
+            var d = s.val();
             if (d && d.json && (d.updatedAt || 0) > (state.updatedAt || 0)) adopt(d.json);
           });
         }).catch(function (e) {
-          status(e.code === 'permission-denied'
-            ? 'Online database refused access. Check the Firestore rules.'
+          status(/permission/i.test(e.code || e.message || '')
+            ? 'Online database refused access. Check the database rules.'
             : 'Could not reach the online database (' + (e.code || 'error') + '). Saved on this device.');
         });
       });
