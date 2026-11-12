@@ -75,6 +75,9 @@
   .account { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
     background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-bottom: 14px;
     font-size: 13px; color: var(--muted); }
+  .account form { display: flex; flex-wrap: wrap; gap: 6px; }
+  .account form[hidden] { display: none; }
+  .account form input { width: 130px; background: #fff; }
   .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
   .tools { display: flex; gap: 8px; flex-wrap: wrap; }
   @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, 1fr); } .grid2 { grid-template-columns: 1fr; gap: 0; } .hero b { font-size: 32px; } .heroside b { font-size: 22px; } }
@@ -98,7 +101,12 @@
 
   <div class="account noprint">
     <span id="syncStatus">Saved on this device only.</span>
-    <button id="signIn" class="primary" hidden>Sign in with Google</button>
+    <form id="loginForm" hidden>
+      <input id="loginUser" placeholder="Username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" required>
+      <button class="primary" type="submit">Sign in</button>
+      <button id="signIn" type="button">Use Google</button>
+    </form>
     <button id="signOut" hidden>Sign out</button>
   </div>
 
@@ -202,7 +210,7 @@
       <button id="importBtn">Restore backup</button>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
-    <p class="hint">Sign in with Google at the top to save the figures online. Everyone who has been given access sees and edits the same figures. Without signing in, they are saved in this browser only. You can also download a backup file at any time.</p>
+    <p class="hint">Sign in at the top to save the figures online. Everyone who has been given access sees and edits the same figures. Without signing in, they are saved in this browser only. You can also download a backup file at any time.</p>
   </section>
   </div>
 </div>
@@ -505,13 +513,28 @@
             : 'Sign-in failed (' + (e.code || 'error') + ').');
         });
       };
+      $('loginForm').onsubmit = function (ev) {
+        ev.preventDefault();
+        var name = $('loginUser').value.trim().toLowerCase();
+        // A username is stored in Firebase as name@<this project's own domain>; a full email also works.
+        var email = name.indexOf('@') > -1 ? name : name + '@' + FIREBASE.authDomain;
+        status('Signing in…');
+        A.signInWithEmailAndPassword(auth, email, $('loginPass').value).then(function () { $('loginPass').value = ''; })
+        .catch(function (e) {
+          var c = e.code || '';
+          status(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c) ? 'Wrong username or password.'
+            : c === 'auth/operation-not-allowed' ? 'Username login is not switched on in Firebase yet (Authentication → Sign-in method → Email/Password).'
+            : c === 'auth/too-many-requests' ? 'Too many tries. Wait a few minutes and try again.'
+            : 'Sign-in failed (' + (c || 'error') + ').');
+        });
+      };
       $('signOut').onclick = function () { A.signOut(auth); };
       A.onAuthStateChanged(auth, function (user) {
         if (unsub) { unsub(); unsub = null; }
         cloud.ref = null; cloud.dirty = false;
-        $('signIn').hidden = !!user; $('signOut').hidden = !user;
+        $('loginForm').hidden = !!user; $('signOut').hidden = !user;
         if (!user) { status('Not signed in. Saved on this device only.'); return; }
-        cloud.who = user.email ? '(' + user.email + ')' : '';
+        cloud.who = user.email ? '(' + user.email.replace('@' + FIREBASE.authDomain, '') + ')' : '';
         var ref = F.ref(db, 'business/main'); // one shared set of figures for everyone allowed in the rules
         status('Loading your saved figures…');
         F.get(ref).then(function (snap) {
@@ -529,7 +552,7 @@
           });
         }).catch(function (e) {
           status(/permission/i.test(e.code || e.message || '')
-            ? 'This Google account has not been given access to the business figures.'
+            ? 'This login has not been given access to the business figures.'
             : 'Could not reach the online database (' + (e.code || 'error') + '). Saved on this device.');
         });
       });

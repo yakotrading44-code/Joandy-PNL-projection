@@ -1,8 +1,8 @@
 {
   "rules": {
     "business": {
-      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'OWNER_EMAIL' || auth.token.email === 'PARTNER_EMAIL')",
-      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'OWNER_EMAIL' || auth.token.email === 'PARTNER_EMAIL')"
+      ".read": "auth != null && (auth.token.email === 'USERNAME_1@joandy-pnl-projection.firebaseapp.com' || auth.token.email === 'USERNAME_2@joandy-pnl-projection.firebaseapp.com')",
+      ".write": "auth != null && (auth.token.email === 'USERNAME_1@joandy-pnl-projection.firebaseapp.com' || auth.token.email === 'USERNAME_2@joandy-pnl-projection.firebaseapp.com')"
     }
   }
 }
