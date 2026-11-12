@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Joandy Profit &amp; Loss</title>
+<style>
+  :root {
+    --bg: #f4f1ea; --card: #fffdf8; --ink: #1f2a24; --muted: #6b756f;
+    --line: #e2dccf; --accent: #1f5c43; --accent-soft: #e3efe8;
+    --loss: #a8322a; --loss-soft: #f7e4e1; --input: #fff8dc;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 16px 14px 60px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+  h1 small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  .monthnav { display: flex; align-items: center; gap: 6px; }
+  .monthnav strong { min-width: 128px; text-align: center; font-size: 16px; }
+  button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--card);
+    color: var(--ink); border-radius: 8px; padding: 7px 12px; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.x { padding: 2px 8px; color: var(--muted); border-color: transparent; background: none; font-size: 18px; line-height: 1; }
+  button.x:hover { color: var(--loss); }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .card span { display: block; font-size: 12px; color: var(--muted); }
+  .card b { font-size: 19px; font-variant-numeric: tabular-nums; }
+  .card.net { background: var(--accent-soft); border-color: var(--accent); }
+  .card.net b { color: var(--accent); }
+  .card.net.neg { background: var(--loss-soft); border-color: var(--loss); }
+  .card.net.neg b { color: var(--loss); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 6px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  th:first-child, td:first-child { text-align: left; }
+  tfoot td { font-weight: 700; border-bottom: none; }
+  input { font: inherit; color: inherit; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--input); padding: 5px 7px; width: 100%; }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  input.num { width: 84px; text-align: right; }
+  input.units { width: 64px; text-align: right; }
+  input.name { min-width: 150px; }
+  .row-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .pl td { padding: 7px 6px; }
+  .pl tr.strong td { font-weight: 700; }
+  .pl tr.net td { font-weight: 700; font-size: 17px; border-bottom: none; }
+  .neg { color: var(--loss); }
+  .pos { color: var(--accent); }
+  tr.jump { cursor: pointer; }
+  tr.jump:hover td { background: var(--accent-soft); }
+  .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; }
+  @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  @media print {
+    body { background: #fff; } .noprint, button { display: none !important; }
+    input { border: none; background: none; padding: 0; }
+    section, .card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Joandy Profit &amp; Loss<small>Amounts in GH¢</small></h1>
+    <div class="monthnav">
+      <button id="prev" class="noprint" aria-label="Previous month">‹</button>
+      <strong id="monthLabel"></strong>
+      <button id="next" class="noprint" aria-label="Next month">›</button>
+    </div>
+  </header>
+
+  <div class="cards">
+    <div class="card"><span>Revenue</span><b id="cRev"></b></div>
+    <div class="card"><span>Cost of goods</span><b id="cCogs"></b></div>
+    <div class="card"><span>Expenses</span><b id="cExp"></b></div>
+    <div class="card net" id="netCard"><span id="netLabel">Net profit</span><b id="cNet"></b></div>
+  </div>
+
+  <section>
+    <h2>Products and units sold this month</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Product</th><th>Selling price</th><th>Cost price</th><th>Units sold</th><th>Sales</th><th>Cost</th><th>Profit</th><th class="noprint"></th></tr></thead>
+        <tbody id="prodBody"></tbody>
+        <tfoot><tr><td>Total</td><td></td><td></td><td id="tUnits"></td><td id="tSales"></td><td id="tCost"></td><td id="tProfit"></td><td class="noprint"></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="row-actions noprint"><button id="addProd">+ Add product</button></div>
+    <p class="hint noprint">Prices apply to every month. If a price changes, add the item again as a new product.</p>
+  </section>
+
+  <section>
+    <h2>Expenses this month</h2>
+    <table>
+      <tbody id="expBody"></tbody>
+      <tfoot><tr><td>Total expenses</td><td id="tExp"></td><td class="noprint"></td></tr></tfoot>
+    </table>
+    <div class="row-actions noprint"><button id="addExp">+ Add expense</button></div>
+  </section>
+
+  <section>
+    <h2>Profit &amp; loss for <span id="plMonth"></span></h2>
+    <table class="pl">
+      <tr><td>Revenue</td><td id="pRev"></td></tr>
+      <tr><td>Cost of goods sold</td><td id="pCogs"></td></tr>
+      <tr class="strong"><td>Gross profit</td><td id="pGross"></td></tr>
+      <tr><td>Expenses</td><td id="pExp"></td></tr>
+      <tr class="net"><td id="pNetLabel">Net profit</td><td id="pNet"></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>All months</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Month</th><th>Revenue</th><th>Cost of goods</th><th>Expenses</th><th>Net profit</th></tr></thead>
+        <tbody id="yearBody"></tbody>
+        <tfoot><tr><td>Total</td><td id="yRev"></td><td id="yCogs"></td><td id="yExp"></td><td id="yNet"></td></tr></tfoot>
+      </table>
+    </div>
+    <p class="hint noprint">Tap a month to open it.</p>
+  </section>
+
+  <section class="noprint">
+    <h2>Your data</h2>
+    <div class="tools">
+      <button id="printBtn">Print / save as PDF</button>
+      <button id="exportBtn">Download backup</button>
+      <button id="importBtn">Restore backup</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="hint">Your figures are saved in this browser on this device only. Download a backup regularly, and use Restore backup to move them to another phone or computer.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var KEY = 'joandy-pnl-v1';
+  var DEFAULT_EXPENSES = ['Delivery cost (from warehouse)', 'Shipping cost', 'Rent & storage', 'Other costs'];
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function uid() { return Math.random().toString(36).slice(2, 9); }
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
+  function money(n) { return n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function monthKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+  function monthName(k) { var p = k.split('-'); return MONTHS[+p[1] - 1] + ' ' + p[0]; }
+  function shift(k, by) { var p = k.split('-'); return monthKey(new Date(+p[0], +p[1] - 1 + by, 1)); }
+
+  function seed() {
+    var list = [['Suede Chelsea boot',350,70,0],['Nikelike sneaker',350,61,0],['Black n white sneaker',350,70,0],
+      ['Army sneaker',350,61,0],['Ash sneaker',350,70,0],['Jacket',500,111,1],['Lacoste',150,35,1],
+      ['Lacoste stripe',150,45,2],['Round neck',100,50,2],['Round neck stripe',120,70,0]];
+    var products = [], units = {};
+    list.forEach(function (r) {
+      var id = uid(); products.push({ id: id, name: r[0], price: r[1], cost: r[2] });
+      if (r[3]) units[id] = r[3];
+    });
+    return { v: 1, products: products, months: { '2026-11': { units: units, expenses: [
+      { id: uid(), name: DEFAULT_EXPENSES[0], amount: 150 }, { id: uid(), name: DEFAULT_EXPENSES[1], amount: 316 },
+      { id: uid(), name: DEFAULT_EXPENSES[2], amount: 0 }, { id: uid(), name: DEFAULT_EXPENSES[3], amount: 0 } ] } } };
+  }
+  function valid(s) { return s && Array.isArray(s.products) && s.months && typeof s.months === 'object'; }
+  function load() {
+    try { var s = JSON.parse(localStorage.getItem(KEY)); if (valid(s)) return s; } catch (e) {}
+    return seed();
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var state = load();
+  var current = monthKey(new Date());
+
+  function month(k, create) {
+    var m = state.months[k];
+    if (!m && create) {
+      m = state.months[k] = { units: {}, expenses: DEFAULT_EXPENSES.map(function (n) { return { id: uid(), name: n, amount: 0 }; }) };
+    }
+    return m;
+  }
+  function totals(k) {
+    var m = state.months[k] || { units: {}, expenses: [] }, t = { units: 0, rev: 0, cogs: 0, exp: 0 };
+    state.products.forEach(function (p) {
+      var u = num(m.units[p.id]); t.units += u; t.rev += u * num(p.price); t.cogs += u * num(p.cost);
+    });
+    m.expenses.forEach(function (e) { t.exp += num(e.amount); });
+    t.gross = t.rev - t.cogs; t.net = t.gross - t.exp;
+    return t;
+  }
+  function hasData(k) { var t = totals(k); return t.units || t.exp; }
+
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, props, kids) {
+    var e = document.createElement(tag);
+    for (var p in props || {}) { if (p === 'data') { for (var d in props.data) e.dataset[d] = props.data[d]; } else e[p] = props[p]; }
+    (kids || []).forEach(function (c) { e.appendChild(c); });
+    return e;
+  }
+  function inp(cls, value, data, type) {
+    var o = { className: cls, value: value === 0 || value ? String(value) : '', data: data };
+    if (type === 'num') { o.type = 'number'; o.min = '0'; o.step = 'any'; o.inputMode = 'decimal'; }
+    return el('input', o);
+  }
+
+  function render() {
+    var m = month(current, true);
+    $('monthLabel').textContent = $('plMonth').textContent = monthName(current);
+    var pb = $('prodBody'); pb.textContent = '';
+    state.products.forEach(function (p) {
+      pb.appendChild(el('tr', { data: { pid: p.id } }, [
+        el('td', {}, [inp('name', p.name, { f: 'name' })]),
+        el('td', {}, [inp('num', p.price, { f: 'price' }, 'num')]),
+        el('td', {}, [inp('num', p.cost, { f: 'cost' }, 'num')]),
+        el('td', {}, [inp('units', m.units[p.id] || '', { f: 'units' }, 'num')]),
+        el('td', { className: 'sales' }), el('td', { className: 'cost' }), el('td', { className: 'profit' }),
+        el('td', { className: 'noprint' }, [el('button', { className: 'x', textContent: '×', title: 'Remove product', data: { del: 'prod' } })])
+      ]));
+    });
+    var eb = $('expBody'); eb.textContent = '';
+    m.expenses.forEach(function (e) {
+      eb.appendChild(el('tr', { data: { eid: e.id } }, [
+        el('td', {}, [inp('name', e.name, { f: 'ename' })]),
+        el('td', {}, [inp('num', e.amount || '', { f: 'amount' }, 'num')]),
+        el('td', { className: 'noprint' }, [el('button', { className: 'x', textContent: '×', title: 'Remove expense', data: { del: 'exp' } })])
+      ]));
+    });
+    recalc();
+  }
+
+  function signed(node, n) { node.textContent = money(n); node.classList.toggle('neg', n < 0); }
+  function recalc() {
+    var m = month(current, true), t = totals(current);
+    Array.prototype.forEach.call($('prodBody').rows, function (tr) {
+      var p = state.products.filter(function (x) { return x.id === tr.dataset.pid; })[0]; if (!p) return;
+      var u = num(m.units[p.id]);
+      tr.querySelector('.sales').textContent = money(u * num(p.price));
+      tr.querySelector('.cost').textContent = money(u * num(p.cost));
+      signed(tr.querySelector('.profit'), u * (num(p.price) - num(p.cost)));
+    });
+    $('tUnits').textContent = t.units.toLocaleString('en-GB');
+    $('tSales').textContent = money(t.rev); $('tCost').textContent = money(t.cogs); signed($('tProfit'), t.gross);
+    $('tExp').textContent = money(t.exp);
+    $('cRev').textContent = $('pRev').textContent = money(t.rev);
+    $('cCogs').textContent = $('pCogs').textContent = money(t.cogs);
+    $('cExp').textContent = $('pExp').textContent = money(t.exp);
+    signed($('pGross'), t.gross);
+    var label = t.net < 0 ? 'Net loss' : 'Net profit';
+    $('netLabel').textContent = $('pNetLabel').textContent = label;
+    $('cNet').textContent = money(t.net); $('netCard').classList.toggle('neg', t.net < 0);
+    $('pNet').textContent = money(t.net); $('pNet').className = t.net < 0 ? 'neg' : 'pos';
+
+    var yb = $('yearBody'); yb.textContent = '';
+    var sum = { rev: 0, cogs: 0, exp: 0, net: 0 };
+    Object.keys(state.months).filter(function (k) { return k === current || hasData(k); }).sort().forEach(function (k) {
+      var x = totals(k); sum.rev += x.rev; sum.cogs += x.cogs; sum.exp += x.exp; sum.net += x.net;
+      var netTd = el('td'); signed(netTd, x.net);
+      yb.appendChild(el('tr', { className: 'jump', data: { month: k } }, [
+        el('td', { textContent: monthName(k) + (k === current ? ' •' : '') }),
+        el('td', { textContent: money(x.rev) }), el('td', { textContent: money(x.cogs) }),
+        el('td', { textContent: money(x.exp) }), netTd ]));
+    });
+    $('yRev').textContent = money(sum.rev); $('yCogs').textContent = money(sum.cogs);
+    $('yExp').textContent = money(sum.exp); signed($('yNet'), sum.net);
+    save();
+  }
+
+  document.addEventListener('input', function (ev) {
+    var t = ev.target, f = t.dataset && t.dataset.f; if (!f) return;
+    var tr = t.closest('tr'), m = month(current, true);
+    if (tr.dataset.pid) {
+      var p = state.products.filter(function (x) { return x.id === tr.dataset.pid; })[0]; if (!p) return;
+      if (f === 'name') p.name = t.value;
+      else if (f === 'units') { var u = Math.max(0, num(t.value)); if (u) m.units[p.id] = u; else delete m.units[p.id]; }
+      else p[f] = Math.max(0, num(t.value));
+    } else if (tr.dataset.eid) {
+      var e = m.expenses.filter(function (x) { return x.id === tr.dataset.eid; })[0]; if (!e) return;
+      if (f === 'ename') e.name = t.value; else e.amount = Math.max(0, num(t.value));
+    }
+    recalc();
+  });
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target, tr = t.closest && t.closest('tr');
+    if (t.dataset && t.dataset.del === 'prod') {
+      var p = state.products.filter(function (x) { return x.id === tr.dataset.pid; })[0];
+      if (!confirm('Remove "' + (p.name || 'this product') + '" and its units in every month?')) return;
+      state.products = state.products.filter(function (x) { return x.id !== p.id; });
+      Object.keys(state.months).forEach(function (k) { delete state.months[k].units[p.id]; });
+      render();
+    } else if (t.dataset && t.dataset.del === 'exp') {
+      var m = month(current, true);
+      m.expenses = m.expenses.filter(function (x) { return x.id !== tr.dataset.eid; });
+      render();
+    } else if (tr && tr.dataset.month) { current = tr.dataset.month; render(); window.scrollTo(0, 0); }
+  });
+
+  $('prev').onclick = function () { current = shift(current, -1); render(); };
+  $('next').onclick = function () { current = shift(current, 1); render(); };
+  $('addProd').onclick = function () {
+    state.products.push({ id: uid(), name: '', price: 0, cost: 0 }); render();
+    var rows = $('prodBody').rows; rows[rows.length - 1].querySelector('input').focus();
+  };
+  $('addExp').onclick = function () {
+    month(current, true).expenses.push({ id: uid(), name: '', amount: 0 }); render();
+    var rows = $('expBody').rows; rows[rows.length - 1].querySelector('input').focus();
+  };
+  $('printBtn').onclick = function () { window.print(); };
+  $('exportBtn').onclick = function () {
+    var a = el('a', { href: URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' })),
+      download: 'joandy-pnl-backup-' + monthKey(new Date()) + '.json' });
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  $('importBtn').onclick = function () { $('importFile').click(); };
+  $('importFile').onchange = function () {
+    var file = this.files[0]; if (!file) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var s = JSON.parse(r.result);
+        if (!valid(s)) throw new Error('bad file');
+        if (!confirm('Replace everything in this browser with the backup?')) return;
+        Object.keys(s.months).forEach(function (k) { s.months[k].units = s.months[k].units || {}; s.months[k].expenses = s.months[k].expenses || []; });
+        state = s; render();
+      } catch (e) { alert('That file is not a Joandy P&L backup.'); }
+    };
+    r.readAsText(file); this.value = '';
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
