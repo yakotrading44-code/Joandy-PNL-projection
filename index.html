@@ -26,14 +26,29 @@
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   button.x { padding: 2px 8px; color: var(--muted); border-color: transparent; background: none; font-size: 18px; line-height: 1; }
   button.x:hover { color: var(--loss); }
-  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
   .card span { display: block; font-size: 12px; color: var(--muted); }
   .card b { font-size: 19px; font-variant-numeric: tabular-nums; }
-  .card.net { background: var(--accent-soft); border-color: var(--accent); }
-  .card.net b { color: var(--accent); }
-  .card.net.neg { background: var(--loss-soft); border-color: var(--loss); }
-  .card.net.neg b { color: var(--loss); }
+  .hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;
+    background: var(--accent); color: #fff; border-radius: 14px; padding: 18px 20px; margin-bottom: 10px; }
+  .hero.neg { background: var(--loss); }
+  .hero span { display: block; font-size: 13px; opacity: .85; }
+  .hero b { display: block; font-size: 38px; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .hero em { display: block; font-style: normal; font-size: 13px; opacity: .9; margin-top: 4px; min-height: 18px; }
+  .heroside { text-align: right; } .heroside b { font-size: 24px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .bars .row { display: grid; grid-template-columns: minmax(90px, 38%) 1fr auto; gap: 8px; align-items: center; padding: 5px 0; font-size: 13px; }
+  .bars .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bars .lab small { color: var(--muted); }
+  .bars .track { background: var(--bg); border-radius: 4px; height: 12px; }
+  .bars .fill { background: var(--accent); border-radius: 4px; height: 12px; min-width: 2px; }
+  .bars .fill.neg { background: var(--loss); }
+  .bars .fill.soft { background: #c9a227; }
+  .bars .val { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 64px; text-align: right; }
+  .bars .empty { color: var(--muted); font-size: 13px; margin: 4px 0; }
+  .divider { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+    margin: 22px 2px 10px; border-top: 1px solid var(--line); padding-top: 16px; }
   section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
   .scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
@@ -60,11 +75,11 @@
     font-size: 13px; color: var(--muted); }
   .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
   .tools { display: flex; gap: 8px; flex-wrap: wrap; }
-  @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, 1fr); } .grid2 { grid-template-columns: 1fr; gap: 0; } .hero b { font-size: 32px; } .heroside b { font-size: 22px; } }
   @media print {
     body { background: #fff; } .noprint, button { display: none !important; }
     input { border: none; background: none; padding: 0; }
-    section, .card { break-inside: avoid; }
+    section, .card, .hero { break-inside: avoid; } .hero { color: #000; background: none !important; border: 1px solid #000; }
   }
 </style>
 </head>
@@ -85,15 +100,69 @@
     <button id="signOut" hidden>Sign out</button>
   </div>
 
+  <div class="hero" id="netCard">
+    <div>
+      <span id="netLabel">Net profit</span>
+      <b id="cNet"></b>
+      <em id="heroSub"></em>
+    </div>
+    <div class="heroside">
+      <span>Profit margin</span><b id="cMargin"></b>
+    </div>
+  </div>
+
   <div class="cards">
     <div class="card"><span>Revenue</span><b id="cRev"></b></div>
     <div class="card"><span>Cost of goods</span><b id="cCogs"></b></div>
+    <div class="card"><span>Gross profit</span><b id="cGross"></b></div>
     <div class="card"><span>Expenses</span><b id="cExp"></b></div>
-    <div class="card net" id="netCard"><span id="netLabel">Net profit</span><b id="cNet"></b></div>
+    <div class="card"><span>Units sold</span><b id="cUnits"></b></div>
+  </div>
+
+  <div class="grid2">
+    <section>
+      <h2>Best sellers this month</h2>
+      <div id="best" class="bars"></div>
+    </section>
+    <section>
+      <h2>Expenses this month</h2>
+      <div id="expBreak" class="bars"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section>
+      <h2>Profit &amp; loss for <span id="plMonth"></span></h2>
+      <table class="pl">
+        <tr><td>Revenue</td><td id="pRev"></td></tr>
+        <tr><td>Cost of goods sold</td><td id="pCogs"></td></tr>
+        <tr class="strong"><td>Gross profit</td><td id="pGross"></td></tr>
+        <tr><td>Expenses</td><td id="pExp"></td></tr>
+        <tr class="net"><td id="pNetLabel">Net profit</td><td id="pNet"></td></tr>
+      </table>
+    </section>
+    <section>
+      <h2>Net profit by month</h2>
+      <div id="trend" class="bars"></div>
+    </section>
   </div>
 
   <section>
-    <h2>Products and units sold this month</h2>
+    <h2>All months</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Month</th><th>Revenue</th><th>Cost of goods</th><th>Expenses</th><th>Net profit</th></tr></thead>
+        <tbody id="yearBody"></tbody>
+        <tfoot><tr><td>Total</td><td id="yRev"></td><td id="yCogs"></td><td id="yExp"></td><td id="yNet"></td></tr></tfoot>
+      </table>
+    </div>
+    <p class="hint noprint">Tap a month to open it.</p>
+  </section>
+
+  <h3 class="divider">Entries for <span id="entryMonth"></span></h3>
+
+  <section>
+    <h2>Products and units sold</h2>
     <div class="scroll">
       <table>
         <thead><tr><th>Product</th><th>Selling price</th><th>Cost price</th><th>Units sold</th><th>Sales</th><th>Cost</th><th>Profit</th><th class="noprint"></th></tr></thead>
@@ -106,35 +175,12 @@
   </section>
 
   <section>
-    <h2>Expenses this month</h2>
+    <h2>Expenses</h2>
     <table>
       <tbody id="expBody"></tbody>
       <tfoot><tr><td>Total expenses</td><td id="tExp"></td><td class="noprint"></td></tr></tfoot>
     </table>
     <div class="row-actions noprint"><button id="addExp">+ Add expense</button></div>
-  </section>
-
-  <section>
-    <h2>Profit &amp; loss for <span id="plMonth"></span></h2>
-    <table class="pl">
-      <tr><td>Revenue</td><td id="pRev"></td></tr>
-      <tr><td>Cost of goods sold</td><td id="pCogs"></td></tr>
-      <tr class="strong"><td>Gross profit</td><td id="pGross"></td></tr>
-      <tr><td>Expenses</td><td id="pExp"></td></tr>
-      <tr class="net"><td id="pNetLabel">Net profit</td><td id="pNet"></td></tr>
-    </table>
-  </section>
-
-  <section>
-    <h2>All months</h2>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Month</th><th>Revenue</th><th>Cost of goods</th><th>Expenses</th><th>Net profit</th></tr></thead>
-        <tbody id="yearBody"></tbody>
-        <tfoot><tr><td>Total</td><td id="yRev"></td><td id="yCogs"></td><td id="yExp"></td><td id="yNet"></td></tr></tfoot>
-      </table>
-    </div>
-    <p class="hint noprint">Tap a month to open it.</p>
   </section>
 
   <section class="noprint">
@@ -225,7 +271,7 @@
 
   function render() {
     var m = month(current, true);
-    $('monthLabel').textContent = $('plMonth').textContent = monthName(current);
+    $('monthLabel').textContent = $('plMonth').textContent = $('entryMonth').textContent = monthName(current);
     var pb = $('prodBody'); pb.textContent = '';
     state.products.forEach(function (p) {
       pb.appendChild(el('tr', { data: { pid: p.id } }, [
@@ -246,6 +292,42 @@
       ]));
     });
     recalc();
+  }
+
+  function barRow(label, sub, frac, value, cls) {
+    var lab = el('div', { className: 'lab', textContent: label || '(no name)' });
+    if (sub) lab.appendChild(el('small', { textContent: ' ' + sub }));
+    var fill = el('div', { className: 'fill' + (cls ? ' ' + cls : '') }); fill.style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + '%';
+    var val = el('div', { className: 'val' + (cls === 'neg' ? ' neg' : ''), textContent: value });
+    return el('div', { className: 'row' }, [lab, el('div', { className: 'track' }, [fill]), val]);
+  }
+  function fillBars(id, rows, emptyText) {
+    var box = $(id); box.textContent = '';
+    if (!rows.length) { box.appendChild(el('p', { className: 'empty', textContent: emptyText })); return; }
+    rows.forEach(function (r) { box.appendChild(r); });
+  }
+  function dashboard(m, t) {
+    $('cGross').textContent = money(t.gross); $('cUnits').textContent = t.units.toLocaleString('en-GB');
+    $('cMargin').textContent = t.rev ? (t.net / t.rev * 100).toFixed(1) + '%' : '–';
+    var prev = shift(current, -1), sub = '';
+    if (state.months[prev] && hasData(prev)) {
+      var diff = t.net - totals(prev).net;
+      sub = diff === 0 ? 'Same as ' + monthName(prev) : (diff > 0 ? '▲ ' : '▼ ') + money(Math.abs(diff)) + (diff > 0 ? ' more than ' : ' less than ') + monthName(prev);
+    }
+    $('heroSub').textContent = sub;
+
+    var sold = state.products.map(function (p) { var u = num(m.units[p.id]); return { p: p, u: u, profit: u * (num(p.price) - num(p.cost)) }; })
+      .filter(function (x) { return x.u > 0; }).sort(function (a, b) { return b.profit - a.profit; }).slice(0, 5);
+    var maxP = Math.max.apply(null, sold.map(function (x) { return Math.abs(x.profit); }).concat([1]));
+    fillBars('best', sold.map(function (x) {
+      return barRow(x.p.name, '× ' + x.u, Math.abs(x.profit) / maxP, money(x.profit), x.profit < 0 ? 'neg' : '');
+    }), 'No sales entered for this month yet.');
+
+    var exps = m.expenses.filter(function (e) { return num(e.amount) > 0; }).sort(function (a, b) { return num(b.amount) - num(a.amount); });
+    var maxE = Math.max.apply(null, exps.map(function (e) { return num(e.amount); }).concat([1]));
+    fillBars('expBreak', exps.map(function (e) {
+      return barRow(e.name, Math.round(num(e.amount) / t.exp * 100) + '%', num(e.amount) / maxE, money(num(e.amount)), 'soft');
+    }), 'No expenses entered for this month yet.');
   }
 
   function signed(node, n) { node.textContent = money(n); node.classList.toggle('neg', n < 0); }
@@ -270,10 +352,13 @@
     $('cNet').textContent = money(t.net); $('netCard').classList.toggle('neg', t.net < 0);
     $('pNet').textContent = money(t.net); $('pNet').className = t.net < 0 ? 'neg' : 'pos';
 
+    dashboard(m, t);
     var yb = $('yearBody'); yb.textContent = '';
+    var trend = [];
     var sum = { rev: 0, cogs: 0, exp: 0, net: 0 };
     Object.keys(state.months).filter(function (k) { return k === current || hasData(k); }).sort().forEach(function (k) {
       var x = totals(k); sum.rev += x.rev; sum.cogs += x.cogs; sum.exp += x.exp; sum.net += x.net;
+      trend.push({ k: k, net: x.net });
       var netTd = el('td'); signed(netTd, x.net);
       yb.appendChild(el('tr', { className: 'jump', data: { month: k } }, [
         el('td', { textContent: monthName(k) + (k === current ? ' •' : '') }),
@@ -282,6 +367,11 @@
     });
     $('yRev').textContent = money(sum.rev); $('yCogs').textContent = money(sum.cogs);
     $('yExp').textContent = money(sum.exp); signed($('yNet'), sum.net);
+    var maxN = Math.max.apply(null, trend.map(function (x) { return Math.abs(x.net); }).concat([1]));
+    fillBars('trend', trend.slice(-12).map(function (x) {
+      var p = x.k.split('-');
+      return barRow(MONTHS[+p[1] - 1].slice(0, 3) + ' ' + p[0], '', Math.abs(x.net) / maxN, money(x.net), x.net < 0 ? 'neg' : '');
+    }), 'Nothing recorded yet.');
     save();
   }
 
