@@ -47,8 +47,10 @@
   .bars .fill.soft { background: #c9a227; }
   .bars .val { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 64px; text-align: right; }
   .bars .empty { color: var(--muted); font-size: 13px; margin: 4px 0; }
-  .divider { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
-    margin: 22px 2px 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .divider { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 4px 2px 10px; }
+  .tabs { display: flex; gap: 4px; background: var(--line); border-radius: 10px; padding: 4px; margin-bottom: 14px; }
+  .tabs button { flex: 1; border: none; background: none; border-radius: 7px; padding: 9px 12px; font-weight: 600; color: var(--muted); }
+  .tabs button[aria-selected="true"] { background: var(--card); color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
   section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
   .scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
@@ -100,6 +102,12 @@
     <button id="signOut" hidden>Sign out</button>
   </div>
 
+  <nav class="tabs noprint" role="tablist">
+    <button role="tab" data-tab="dash" aria-selected="true">Dashboard</button>
+    <button role="tab" data-tab="entries" aria-selected="false">Entries</button>
+  </nav>
+
+  <div id="tab-dash">
   <div class="hero" id="netCard">
     <div>
       <span id="netLabel">Net profit</span>
@@ -159,6 +167,9 @@
     <p class="hint noprint">Tap a month to open it.</p>
   </section>
 
+  </div>
+
+  <div id="tab-entries" hidden>
   <h3 class="divider">Entries for <span id="entryMonth"></span></h3>
 
   <section>
@@ -193,6 +204,7 @@
     </div>
     <p class="hint">Sign in with Google at the top to save your figures online and see them on any device. Without signing in, they are saved in this browser only. You can also download a backup file at any time.</p>
   </section>
+  </div>
 </div>
 
 <script>
@@ -435,6 +447,18 @@
     };
     r.readAsText(file); this.value = '';
   };
+
+  function showTab(name) {
+    ['dash', 'entries'].forEach(function (t) { $('tab-' + t).hidden = t !== name; });
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === name));
+    });
+    try { sessionStorage.setItem('joandy-tab', name); } catch (e) {}
+  }
+  document.querySelector('.tabs').addEventListener('click', function (ev) {
+    if (ev.target.dataset.tab) { showTab(ev.target.dataset.tab); window.scrollTo(0, 0); }
+  });
+  try { if (sessionStorage.getItem('joandy-tab') === 'entries') showTab('entries'); } catch (e) {}
 
   // ---- Online saving (Firebase) ----
   var FIREBASE = {
