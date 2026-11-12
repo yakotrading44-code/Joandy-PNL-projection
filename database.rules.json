@@ -1,10 +1,8 @@
 {
   "rules": {
-    "users": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
-      }
+    "business": {
+      ".read": "auth != null && auth.token.email_verified === true && (auth.token.email === 'OWNER_EMAIL' || auth.token.email === 'PARTNER_EMAIL')",
+      ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'OWNER_EMAIL' || auth.token.email === 'PARTNER_EMAIL')"
     }
   }
 }

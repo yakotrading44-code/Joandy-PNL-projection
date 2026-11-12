@@ -202,7 +202,7 @@
       <button id="importBtn">Restore backup</button>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
-    <p class="hint">Sign in with Google at the top to save your figures online and see them on any device. Without signing in, they are saved in this browser only. You can also download a backup file at any time.</p>
+    <p class="hint">Sign in with Google at the top to save the figures online. Everyone who has been given access sees and edits the same figures. Without signing in, they are saved in this browser only. You can also download a backup file at any time.</p>
   </section>
   </div>
 </div>
@@ -512,7 +512,7 @@
         $('signIn').hidden = !!user; $('signOut').hidden = !user;
         if (!user) { status('Not signed in. Saved on this device only.'); return; }
         cloud.who = user.email ? '(' + user.email + ')' : '';
-        var ref = F.ref(db, 'users/' + user.uid);
+        var ref = F.ref(db, 'business/main'); // one shared set of figures for everyone allowed in the rules
         status('Loading your saved figures…');
         F.get(ref).then(function (snap) {
           var d = snap.exists() ? snap.val() : null;
@@ -524,11 +524,12 @@
           unsub = F.onValue(ref, function (s) {
             if (cloud.dirty) return;
             var d = s.val();
-            if (d && d.json && (d.updatedAt || 0) > (state.updatedAt || 0)) adopt(d.json);
+            // A partner's change: show it here straight away.
+            if (d && d.json && d.json !== JSON.stringify(state)) adopt(d.json);
           });
         }).catch(function (e) {
           status(/permission/i.test(e.code || e.message || '')
-            ? 'Online database refused access. Check the database rules.'
+            ? 'This Google account has not been given access to the business figures.'
             : 'Could not reach the online database (' + (e.code || 'error') + '). Saved on this device.');
         });
       });
