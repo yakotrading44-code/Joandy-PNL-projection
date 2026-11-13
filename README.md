@@ -1,12 +1,13 @@
-# Joandy P&L projection
+# Joandy business dashboard
 
-A simple profit and loss tracker for a buy-and-sell business. One page, no server.
+A sales, expenses and profit tracker for a buy-and-sell business. One page, no server.
 
-- Pick a month, enter units sold per product and the month's expenses.
-- Revenue, cost of goods, gross profit and net profit calculate automatically.
-- "All months" shows every month side by side.
-- Sign in with Google to save figures online (Firebase Realtime Database). Everyone listed in the database rules shares and edits the same figures. Without signing in, data stays in the browser (localStorage).
-- **Download backup** / **Restore backup** keep a copy as a file.
+- **Dashboard:** net profit, cash on hand, revenue, cost of goods, salaries, other expenses, margin, product performance, cash flow and month-by-month results. Filter by month or show all time.
+- **Sales:** log each sale (date, product, quantity, unit price, customer/notes). Revenue, cost of goods and gross profit are worked out per sale.
+- **Expenses:** log salaries and operating costs by category, payee and payment method.
+- **Products:** the catalog with selling price, unit cost, unit profit and margin.
+- **More:** initial capital, print, backup and restore.
+- Sign in to save figures online (Firebase Realtime Database). Everyone listed in the database rules shares and edits the same figures. Without signing in, data stays in the browser.
 
 ## Firebase setup
 

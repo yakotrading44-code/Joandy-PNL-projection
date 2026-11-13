@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Joandy Profit &amp; Loss</title>
+<title>Joandy Business Dashboard</title>
 <style>
   :root {
     --bg: #f4f1ea; --card: #fffdf8; --ink: #1f2a24; --muted: #6b756f;
@@ -86,17 +86,40 @@
     input { border: none; background: none; padding: 0; }
     section, .card, .hero { break-inside: avoid; } .hero { color: #000; background: none !important; border: 1px solid #000; }
   }
+  .period { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  select { font: inherit; color: inherit; border: 1px solid var(--line); border-radius: 6px; background: var(--input); padding: 5px 7px; max-width: 100%; }
+  .period select { background: var(--card); font-weight: 600; padding: 7px 10px; border-radius: 8px; }
+  .tabs button { padding: 9px 4px; font-size: 14px; }
+  .cards { grid-template-columns: repeat(3, 1fr); }
+  .grid2 > section { min-width: 0; }
+  .legend { font-size: 12px; color: var(--muted); margin: -4px 0 6px; }
+  .legend .k { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--accent); margin: 0 4px 0 10px; }
+  .legend .k.rev, .bars .fill.rev { background: #9db8ab; }
+  .legend .k:first-child { margin-left: 0; }
+  .bars .pair { display: grid; gap: 3px; }
+  .bars .pair .track, .bars .pair .fill { height: 8px; }
+  .bars .val small { display: block; font-weight: 400; color: var(--muted); }
+  form.entry { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: end; }
+  form.entry label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+  form.entry label.wide { grid-column: span 2; }
+  form.entry select, form.entry input { width: 100%; font-size: 15px; color: var(--ink); padding: 8px; }
+  form.entry button { padding: 9px 12px; }
+  td input.date { width: 132px; } td input.qty { width: 60px; text-align: right; } td input.note { min-width: 150px; }
+  td select { min-width: 130px; } td.id { color: var(--muted); font-size: 12px; }
+  h2 small { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .capital { display: flex; align-items: center; gap: 8px; font-weight: 600; } .capital input { width: 160px; font-size: 18px; }
+  .pl td small { color: var(--muted); margin-left: 6px; }
+  td.empty { text-align: left !important; color: var(--muted); padding: 14px 6px; }
+  @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, 1fr); } form.entry { grid-template-columns: 1fr 1fr; } .tabs button { font-size: 12.5px; } .heroside b { font-size: 20px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>Joandy Profit &amp; Loss<small>Amounts in GH¢</small></h1>
-    <div class="monthnav">
-      <button id="prev" class="noprint" aria-label="Previous month">‹</button>
-      <strong id="monthLabel"></strong>
-      <button id="next" class="noprint" aria-label="Next month">›</button>
-    </div>
+    <h1>Joandy Business Dashboard<small>Sales, expenses and profit · amounts in GH₵</small></h1>
+    <label class="period noprint">Showing
+      <select id="period"></select>
+    </label>
   </header>
 
   <div class="account noprint">
@@ -111,334 +134,517 @@
   </div>
 
   <nav class="tabs noprint" role="tablist">
-    <button role="tab" data-tab="dash" aria-selected="true">Dashboard</button>
-    <button role="tab" data-tab="entries" aria-selected="false">Entries</button>
+    <button role="tab" data-tab="dash">Dashboard</button>
+    <button role="tab" data-tab="sales">Sales</button>
+    <button role="tab" data-tab="expenses">Expenses</button>
+    <button role="tab" data-tab="products">Products</button>
+    <button role="tab" data-tab="more">More</button>
   </nav>
 
   <div id="tab-dash">
-  <div class="hero" id="netCard">
-    <div>
-      <span id="netLabel">Net profit</span>
-      <b id="cNet"></b>
-      <em id="heroSub"></em>
+    <div class="hero" id="netCard">
+      <div><span id="netLabel">Net profit</span><b id="cNet"></b><em id="heroSub"></em></div>
+      <div class="heroside"><span>Cash on hand (all time)</span><b id="cCash"></b></div>
     </div>
-    <div class="heroside">
-      <span>Profit margin</span><b id="cMargin"></b>
+    <div class="cards">
+      <div class="card"><span>Sales revenue</span><b id="cRev"></b></div>
+      <div class="card"><span>Inventory cost (COGS)</span><b id="cCogs"></b></div>
+      <div class="card"><span>Gross profit</span><b id="cGross"></b></div>
+      <div class="card"><span>Salaries paid</span><b id="cSal"></b></div>
+      <div class="card"><span>Other expenses</span><b id="cOther"></b></div>
+      <div class="card"><span>Net margin</span><b id="cMargin"></b></div>
     </div>
-  </div>
 
-  <div class="cards">
-    <div class="card"><span>Revenue</span><b id="cRev"></b></div>
-    <div class="card"><span>Cost of goods</span><b id="cCogs"></b></div>
-    <div class="card"><span>Gross profit</span><b id="cGross"></b></div>
-    <div class="card"><span>Expenses</span><b id="cExp"></b></div>
-    <div class="card"><span>Units sold</span><b id="cUnits"></b></div>
-  </div>
+    <section>
+      <h2>Product performance</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Product</th><th>Units sold</th><th>Revenue</th><th>COGS</th><th>Gross profit</th><th>Margin</th></tr></thead>
+        <tbody id="perfBody"></tbody>
+        <tfoot id="perfFoot"></tfoot>
+      </table></div>
+    </section>
 
-  <div class="grid2">
-    <section>
-      <h2>Best sellers this month</h2>
-      <div id="best" class="bars"></div>
-    </section>
-    <section>
-      <h2>Expenses this month</h2>
-      <div id="expBreak" class="bars"></div>
-    </section>
-  </div>
+    <div class="grid2">
+      <section>
+        <h2>Revenue and gross profit by product</h2>
+        <p class="legend"><i class="k rev"></i>Revenue <i class="k"></i>Gross profit</p>
+        <div id="prodBars" class="bars"></div>
+      </section>
+      <section>
+        <h2>Expenses by category</h2>
+        <div id="expBars" class="bars"></div>
+      </section>
+    </div>
 
-  <div class="grid2">
-    <section>
-      <h2>Profit &amp; loss for <span id="plMonth"></span></h2>
-      <table class="pl">
-        <tr><td>Revenue</td><td id="pRev"></td></tr>
-        <tr><td>Cost of goods sold</td><td id="pCogs"></td></tr>
-        <tr class="strong"><td>Gross profit</td><td id="pGross"></td></tr>
-        <tr><td>Expenses</td><td id="pExp"></td></tr>
-        <tr class="net"><td id="pNetLabel">Net profit</td><td id="pNet"></td></tr>
-      </table>
-    </section>
-    <section>
-      <h2>Net profit by month</h2>
-      <div id="trend" class="bars"></div>
-    </section>
-  </div>
+    <div class="grid2">
+      <section>
+        <h2>Cash flow (all time)</h2>
+        <table class="pl" id="cashTable"></table>
+      </section>
+      <section>
+        <h2>Net profit by month</h2>
+        <div id="trend" class="bars"></div>
+      </section>
+    </div>
 
-  <section>
-    <h2>All months</h2>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Month</th><th>Revenue</th><th>Cost of goods</th><th>Expenses</th><th>Net profit</th></tr></thead>
+    <section>
+      <h2>All months</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Month</th><th>Revenue</th><th>COGS</th><th>Salaries</th><th>Other expenses</th><th>Net profit</th></tr></thead>
         <tbody id="yearBody"></tbody>
-        <tfoot><tr><td>Total</td><td id="yRev"></td><td id="yCogs"></td><td id="yExp"></td><td id="yNet"></td></tr></tfoot>
-      </table>
-    </div>
-    <p class="hint noprint">Tap a month to open it.</p>
-  </section>
-
+        <tfoot id="yearFoot"></tfoot>
+      </table></div>
+      <p class="hint noprint">Tap a month to show only that month.</p>
+    </section>
   </div>
 
-  <div id="tab-entries" hidden>
-  <h3 class="divider">Entries for <span id="entryMonth"></span></h3>
+  <div id="tab-sales" hidden>
+    <section class="noprint">
+      <h2>Record a sale</h2>
+      <form id="saleForm" class="entry">
+        <label>Date<input type="date" id="sDate" required></label>
+        <label class="wide">Product<select id="sProd" required></select></label>
+        <label>Qty sold<input type="number" id="sQty" min="1" step="1" value="1" inputmode="numeric" required></label>
+        <label>Unit price<input type="number" id="sPrice" min="0" step="any" inputmode="decimal" required></label>
+        <label class="wide">Customer / notes<input id="sNote"></label>
+        <button class="primary" type="submit">Add sale</button>
+      </form>
+      <p class="hint" id="salePreview"></p>
+    </section>
+    <section>
+      <h2>Sales log <small id="salesCount"></small></h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Sale ID</th><th>Date</th><th>Product</th><th>Qty</th><th>Unit price</th><th>Revenue</th><th>COGS</th><th>Gross profit</th><th>Customer / notes</th><th class="noprint"></th></tr></thead>
+        <tbody id="salesBody"></tbody>
+        <tfoot id="salesFoot"></tfoot>
+      </table></div>
+    </section>
+  </div>
 
-  <section>
-    <h2>Products and units sold</h2>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Product</th><th>Selling price</th><th>Cost price</th><th>Units sold</th><th>Sales</th><th>Cost</th><th>Profit</th><th class="noprint"></th></tr></thead>
+  <div id="tab-expenses" hidden>
+    <section class="noprint">
+      <h2>Record a salary or expense</h2>
+      <form id="expForm" class="entry">
+        <label>Date<input type="date" id="eDate" required></label>
+        <label>Category<select id="eCat"></select></label>
+        <label class="wide">Staff / vendor / payee<input id="ePayee"></label>
+        <label class="wide">Description<input id="eDesc"></label>
+        <label>Amount paid<input type="number" id="eAmt" min="0" step="any" inputmode="decimal" required></label>
+        <label>Payment method<select id="eMethod"></select></label>
+        <button class="primary" type="submit">Add expense</button>
+      </form>
+    </section>
+    <section>
+      <h2>Salaries &amp; expenses log <small id="expCount"></small></h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Expense ID</th><th>Date</th><th>Category</th><th>Staff / vendor / payee</th><th>Description</th><th>Amount paid</th><th>Payment method</th><th class="noprint"></th></tr></thead>
+        <tbody id="expBody"></tbody>
+        <tfoot id="expFoot"></tfoot>
+      </table></div>
+    </section>
+  </div>
+
+  <div id="tab-products" hidden>
+    <section>
+      <h2>Product catalog and price list</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>SKU</th><th>Product name</th><th>Selling price</th><th>Cost per unit</th><th>Unit profit</th><th>Unit margin</th><th class="noprint"></th></tr></thead>
         <tbody id="prodBody"></tbody>
-        <tfoot><tr><td>Total</td><td></td><td></td><td id="tUnits"></td><td id="tSales"></td><td id="tCost"></td><td id="tProfit"></td><td class="noprint"></td></tr></tfoot>
-      </table>
-    </div>
-    <div class="row-actions noprint"><button id="addProd">+ Add product</button></div>
-    <p class="hint noprint">Prices apply to every month. If a price changes, add the item again as a new product.</p>
-  </section>
+      </table></div>
+      <div class="row-actions noprint"><button id="addProd">+ Add product</button></div>
+      <p class="hint noprint">New prices apply to sales you record from now on. Sales already in the log keep the price and cost they were recorded with.</p>
+    </section>
+  </div>
 
-  <section>
-    <h2>Expenses</h2>
-    <table>
-      <tbody id="expBody"></tbody>
-      <tfoot><tr><td>Total expenses</td><td id="tExp"></td><td class="noprint"></td></tr></tfoot>
-    </table>
-    <div class="row-actions noprint"><button id="addExp">+ Add expense</button></div>
-  </section>
-
-  <section class="noprint">
-    <h2>Your data</h2>
-    <div class="tools">
-      <button id="printBtn">Print / save as PDF</button>
-      <button id="exportBtn">Download backup</button>
-      <button id="importBtn">Restore backup</button>
-      <input type="file" id="importFile" accept="application/json,.json" hidden>
-    </div>
-    <p class="hint">Sign in at the top to save the figures online. Everyone who has been given access sees and edits the same figures. Without signing in, they are saved in this browser only. You can also download a backup file at any time.</p>
-  </section>
+  <div id="tab-more" hidden>
+    <section>
+      <h2>Initial capital invested</h2>
+      <label class="capital">GH₵ <input type="number" id="capital" min="0" step="any" inputmode="decimal"></label>
+      <p class="hint">Cash on hand = initial capital + all sales − cost of goods sold − salaries − other expenses.</p>
+    </section>
+    <section class="noprint">
+      <h2>Your data</h2>
+      <div class="tools">
+        <button id="printBtn">Print dashboard / save as PDF</button>
+        <button id="exportBtn">Download backup</button>
+        <button id="importBtn">Restore backup</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      </div>
+      <p class="hint">Sign in at the top to save the figures online. Everyone who has been given access sees and edits the same figures. Without signing in, they are saved in this browser only.</p>
+    </section>
   </div>
 </div>
 
 <script>
 (function () {
   'use strict';
-  var KEY = 'joandy-pnl-v1';
-  var DEFAULT_EXPENSES = ['Delivery cost (from warehouse)', 'Shipping cost', 'Rent & storage', 'Other costs'];
+  var KEY = 'joandy-pnl-v2', OLD_KEY = 'joandy-pnl-v1';
+  var CATS = ['Salary', 'Rent & Storage', 'Shipping & Delivery', 'Ads & Marketing', 'Packaging & Fees', 'Other'];
+  var METHODS = ['Cash', 'MoMo', 'Bank transfer', 'Card', 'Other'];
   var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var TABS = ['dash', 'sales', 'expenses', 'products', 'more'];
 
+  // ---------- helpers ----------
   function uid() { return Math.random().toString(36).slice(2, 9); }
   function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
   function money(n) { return n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-  function monthKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+  function pct(a, b) { return b ? (a / b * 100).toFixed(1) + '%' : '–'; }
+  function pad(n, w) { return String(n).padStart(w, '0'); }
+  function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1, 2) + '-' + pad(d.getDate(), 2); }
+  function today() { return iso(new Date()); }
   function monthName(k) { var p = k.split('-'); return MONTHS[+p[1] - 1] + ' ' + p[0]; }
-  function shift(k, by) { var p = k.split('-'); return monthKey(new Date(+p[0], +p[1] - 1 + by, 1)); }
+  function shiftMonth(k, by) { var p = k.split('-'); return iso(new Date(+p[0], +p[1] - 1 + by, 1)).slice(0, 7); }
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, props, kids) {
+    var e = document.createElement(tag), p;
+    for (p in props || {}) { if (p === 'data') { for (var d in props.data) e.dataset[d] = props.data[d]; } else e[p] = props[p]; }
+    (kids || []).forEach(function (c) { if (c) e.appendChild(c); });
+    return e;
+  }
+  function td(text, cls) { return el('td', { textContent: text, className: cls || '' }); }
+  function moneyTd(n) { return td(money(n), n < 0 ? 'neg' : ''); }
+  function field(kind, id, f, value, cls, type) {
+    var o = { className: cls || '', data: { kind: kind, id: id, f: f }, value: value === null || value === undefined ? '' : String(value) };
+    if (type === 'num') { o.type = 'number'; o.min = '0'; o.step = 'any'; o.inputMode = 'decimal'; }
+    if (type === 'date') o.type = 'date';
+    return el('input', o);
+  }
+  function selectEl(options, value, data, placeholder) {
+    var s = el('select', { data: data || {} });
+    if (placeholder) s.appendChild(el('option', { value: '', textContent: placeholder }));
+    options.forEach(function (o) { s.appendChild(el('option', { value: o[0], textContent: o[1] })); });
+    s.value = value || '';
+    return s;
+  }
+  function delBtn(kind, id, title) {
+    return el('td', { className: 'noprint' }, [el('button', { className: 'x', textContent: '×', title: title, type: 'button', data: { del: kind, id: id } })]);
+  }
+  function emptyRow(cols, text) { return el('tr', {}, [el('td', { colSpan: cols, className: 'empty', textContent: text })]); }
 
-  function seed() {
+  // ---------- data ----------
+  function seedV1() {
     var list = [['Suede Chelsea boot',350,70,0],['Nikelike sneaker',350,61,0],['Black n white sneaker',350,70,0],
       ['Army sneaker',350,61,0],['Ash sneaker',350,70,0],['Jacket',500,111,1],['Lacoste',150,35,1],
       ['Lacoste stripe',150,45,2],['Round neck',100,50,2],['Round neck stripe',120,70,0]];
     var products = [], units = {};
-    list.forEach(function (r) {
-      var id = uid(); products.push({ id: id, name: r[0], price: r[1], cost: r[2] });
-      if (r[3]) units[id] = r[3];
-    });
-    return { v: 1, products: products, months: { '2026-11': { units: units, expenses: [
-      { id: uid(), name: DEFAULT_EXPENSES[0], amount: 150 }, { id: uid(), name: DEFAULT_EXPENSES[1], amount: 316 },
-      { id: uid(), name: DEFAULT_EXPENSES[2], amount: 0 }, { id: uid(), name: DEFAULT_EXPENSES[3], amount: 0 } ] } } };
+    list.forEach(function (r) { var id = uid(); products.push({ id: id, name: r[0], price: r[1], cost: r[2] }); if (r[3]) units[id] = r[3]; });
+    return { v: 1, updatedAt: 0, products: products, months: { '2026-11': { units: units, expenses: [
+      { name: 'Delivery cost (from warehouse)', amount: 150 }, { name: 'Shipping cost', amount: 316 } ] } } };
   }
-  function valid(s) { return s && Array.isArray(s.products) && s.months && typeof s.months === 'object'; }
+  function valid(s) { return !!s && Array.isArray(s.products) && (Array.isArray(s.sales) || (!!s.months && typeof s.months === 'object')); }
+  // Turns the older month-by-month data into dated sales and expense entries.
+  function migrate(s) {
+    if (Array.isArray(s.sales)) {
+      s.v = 2; s.capital = num(s.capital); s.expenses = s.expenses || []; s.seq = s.seq || {};
+      s.seq.sale = Math.max(num(s.seq.sale), s.sales.reduce(function (m, x) { return Math.max(m, num(x.n)); }, 0));
+      s.seq.exp = Math.max(num(s.seq.exp), s.expenses.reduce(function (m, x) { return Math.max(m, num(x.n)); }, 0));
+      return s;
+    }
+    var out = { v: 2, updatedAt: s.updatedAt || 0, capital: 0, products: s.products, sales: [], expenses: [], seq: { sale: 0, exp: 0 } };
+    Object.keys(s.months).sort().forEach(function (k) {
+      var m = s.months[k] || {};
+      s.products.forEach(function (p) {
+        var u = num((m.units || {})[p.id]);
+        if (u > 0) out.sales.push({ id: uid(), n: ++out.seq.sale, date: k + '-01', pid: p.id, name: p.name, qty: u, price: num(p.price), cost: num(p.cost), note: 'Carried over from monthly entry' });
+      });
+      (m.expenses || []).forEach(function (e) {
+        if (num(e.amount) <= 0) return;
+        var n = String(e.name || ''), cat = /salar|wage/i.test(n) ? 'Salary' : /rent|storage/i.test(n) ? 'Rent & Storage'
+          : /ship|deliver/i.test(n) ? 'Shipping & Delivery' : /ad|market/i.test(n) ? 'Ads & Marketing' : /pack|fee/i.test(n) ? 'Packaging & Fees' : 'Other';
+        out.expenses.push({ id: uid(), n: ++out.seq.exp, date: k + '-01', cat: cat, payee: '', desc: n, amount: num(e.amount), method: 'Cash' });
+      });
+    });
+    return out;
+  }
   function load() {
-    try { var s = JSON.parse(localStorage.getItem(KEY)); if (valid(s)) return s; } catch (e) {}
-    return seed();
+    var keys = [KEY, OLD_KEY];
+    for (var i = 0; i < keys.length; i++) {
+      try { var s = JSON.parse(localStorage.getItem(keys[i])); if (valid(s)) return migrate(s); } catch (e) {}
+    }
+    return migrate(seedV1());
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
-  // Call after a real edit by the user: stamps the change and sends it online.
-  function touch() { state.updatedAt = Date.now(); save(); cloud.push(); }
-  function normalize(s) {
-    Object.keys(s.months).forEach(function (k) { s.months[k].units = s.months[k].units || {}; s.months[k].expenses = s.months[k].expenses || []; });
-    return s;
-  }
+  // Call after a real edit by the user: stamps the change, redraws and sends it online.
+  function touch() { state.updatedAt = Date.now(); save(); cloud.push(); refresh(); }
 
   var state = load();
-  var current = monthKey(new Date());
+  var period = 'all', tab = 'dash';
+  try { period = sessionStorage.getItem('joandy-period') || 'all'; tab = sessionStorage.getItem('joandy-tab') || 'dash'; } catch (e) {}
+  if (TABS.indexOf(tab) < 0) tab = 'dash';
 
-  function month(k, create) {
-    var m = state.months[k];
-    if (!m && create) {
-      m = state.months[k] = { units: {}, expenses: DEFAULT_EXPENSES.map(function (n) { return { id: uid(), name: n, amount: 0 }; }) };
-    }
-    return m;
-  }
-  function totals(k) {
-    var m = state.months[k] || { units: {}, expenses: [] }, t = { units: 0, rev: 0, cogs: 0, exp: 0 };
-    state.products.forEach(function (p) {
-      var u = num(m.units[p.id]); t.units += u; t.rev += u * num(p.price); t.cogs += u * num(p.cost);
-    });
-    m.expenses.forEach(function (e) { t.exp += num(e.amount); });
-    t.gross = t.rev - t.cogs; t.net = t.gross - t.exp;
+  function product(id) { for (var i = 0; i < state.products.length; i++) if (state.products[i].id === id) return state.products[i]; return null; }
+  function saleName(s) { var p = product(s.pid); return p ? p.name : (s.name || '(removed product)'); }
+  function inPeriod(x, per) { return per === 'all' || String(x.date || '').slice(0, 7) === per; }
+  function totals(per) {
+    var t = { units: 0, rev: 0, cogs: 0, sal: 0, other: 0 };
+    state.sales.forEach(function (s) { if (!inPeriod(s, per)) return; var q = num(s.qty); t.units += q; t.rev += q * num(s.price); t.cogs += q * num(s.cost); });
+    state.expenses.forEach(function (e) { if (!inPeriod(e, per)) return; if (e.cat === 'Salary') t.sal += num(e.amount); else t.other += num(e.amount); });
+    t.gross = t.rev - t.cogs; t.exp = t.sal + t.other; t.net = t.gross - t.exp;
     return t;
   }
-  function hasData(k) { var t = totals(k); return t.units || t.exp; }
-
-  var $ = function (id) { return document.getElementById(id); };
-  function el(tag, props, kids) {
-    var e = document.createElement(tag);
-    for (var p in props || {}) { if (p === 'data') { for (var d in props.data) e.dataset[d] = props.data[d]; } else e[p] = props[p]; }
-    (kids || []).forEach(function (c) { e.appendChild(c); });
-    return e;
+  function monthsWithData() {
+    var set = {};
+    state.sales.concat(state.expenses).forEach(function (x) { var k = String(x.date || '').slice(0, 7); if (/^\d{4}-\d{2}$/.test(k)) set[k] = 1; });
+    return Object.keys(set).sort();
   }
-  function inp(cls, value, data, type) {
-    var o = { className: cls, value: value === 0 || value ? String(value) : '', data: data };
-    if (type === 'num') { o.type = 'number'; o.min = '0'; o.step = 'any'; o.inputMode = 'decimal'; }
-    return el('input', o);
+  function byDateDesc(a, b) { return a.date === b.date ? num(b.n) - num(a.n) : (a.date < b.date ? 1 : -1); }
+
+  // ---------- drawing ----------
+  function barRow(label, sub, bars, valueNode) {
+    var lab = el('div', { className: 'lab', textContent: label || '(no name)' });
+    if (sub) lab.appendChild(el('small', { textContent: ' ' + sub }));
+    var tracks = bars.map(function (b) {
+      var fill = el('div', { className: 'fill ' + (b.cls || '') }); fill.style.width = Math.round(Math.max(0, Math.min(1, b.frac)) * 100) + '%';
+      return el('div', { className: 'track' }, [fill]);
+    });
+    return el('div', { className: 'row' }, [lab, tracks.length > 1 ? el('div', { className: 'pair' }, tracks) : tracks[0], valueNode]);
+  }
+  function valNode(main, small, neg) {
+    var v = el('div', { className: 'val' + (neg ? ' neg' : ''), textContent: main });
+    if (small) v.appendChild(el('small', { textContent: small }));
+    return v;
+  }
+  function fill(id, nodes, emptyText) {
+    var box = $(id); box.textContent = '';
+    if (!nodes.length && emptyText) { box.appendChild(el('p', { className: 'empty', textContent: emptyText })); return; }
+    nodes.forEach(function (n) { box.appendChild(n); });
+  }
+
+  function renderPeriod() {
+    var months = monthsWithData(), cur = today().slice(0, 7);
+    if (months.indexOf(cur) < 0) months.push(cur);
+    if (period !== 'all' && months.indexOf(period) < 0) months.push(period);
+    months.sort().reverse();
+    var sel = $('period'); sel.textContent = '';
+    sel.appendChild(el('option', { value: 'all', textContent: 'All time' }));
+    months.forEach(function (k) { sel.appendChild(el('option', { value: k, textContent: monthName(k) })); });
+    sel.value = period;
+  }
+
+  function renderDash() {
+    var t = totals(period), all = totals('all');
+    $('netLabel').textContent = (t.net < 0 ? 'Net loss' : 'Net profit') + (period === 'all' ? ' · all time' : ' · ' + monthName(period));
+    $('cNet').textContent = money(t.net); $('netCard').classList.toggle('neg', t.net < 0);
+    var sub = '';
+    if (period !== 'all') {
+      var prev = shiftMonth(period, -1);
+      if (monthsWithData().indexOf(prev) > -1) {
+        var diff = t.net - totals(prev).net;
+        sub = diff === 0 ? 'Same as ' + monthName(prev) : (diff > 0 ? '▲ ' : '▼ ') + money(Math.abs(diff)) + (diff > 0 ? ' more than ' : ' less than ') + monthName(prev);
+      }
+    } else sub = t.units.toLocaleString('en-GB') + ' units sold';
+    $('heroSub').textContent = sub;
+    $('cCash').textContent = money(num(state.capital) + all.net);
+    $('cRev').textContent = money(t.rev); $('cCogs').textContent = money(t.cogs); $('cGross').textContent = money(t.gross);
+    $('cSal').textContent = money(t.sal); $('cOther').textContent = money(t.other); $('cMargin').textContent = pct(t.net, t.rev);
+
+    // Product performance
+    var groups = {}, order = [];
+    state.products.forEach(function (p) { groups[p.id] = { name: p.name, u: 0, rev: 0, cogs: 0 }; order.push(p.id); });
+    state.sales.forEach(function (s) {
+      if (!inPeriod(s, period)) return;
+      var key = product(s.pid) ? s.pid : 'x:' + saleName(s);
+      if (!groups[key]) { groups[key] = { name: saleName(s), u: 0, rev: 0, cogs: 0 }; order.push(key); }
+      var g = groups[key], q = num(s.qty); g.u += q; g.rev += q * num(s.price); g.cogs += q * num(s.cost);
+    });
+    var rows = order.map(function (k) { return groups[k]; });
+    fill('perfBody', rows.map(function (g) {
+      return el('tr', {}, [td(g.name || '(no name)'), td(g.u.toLocaleString('en-GB')), td(money(g.rev)), td(money(g.cogs)), moneyTd(g.rev - g.cogs), td(pct(g.rev - g.cogs, g.rev))]);
+    }));
+    if (!rows.length) $('perfBody').appendChild(emptyRow(6, 'No products yet. Add them in the Products tab.'));
+    fill('perfFoot', [el('tr', {}, [td('Total'), td(t.units.toLocaleString('en-GB')), td(money(t.rev)), td(money(t.cogs)), moneyTd(t.gross), td(pct(t.gross, t.rev))])]);
+
+    var sold = rows.filter(function (g) { return g.u > 0; }).sort(function (a, b) { return b.rev - a.rev; });
+    var maxR = Math.max.apply(null, sold.map(function (g) { return g.rev; }).concat([1]));
+    fill('prodBars', sold.map(function (g) {
+      var gp = g.rev - g.cogs;
+      return barRow(g.name, '× ' + g.u, [{ frac: g.rev / maxR, cls: 'rev' }, { frac: Math.abs(gp) / maxR, cls: gp < 0 ? 'neg' : '' }], valNode(money(gp), money(g.rev), gp < 0));
+    }), 'No sales recorded for this period yet.');
+
+    var cats = {};
+    state.expenses.forEach(function (e) { if (inPeriod(e, period) && num(e.amount) > 0) cats[e.cat || 'Other'] = (cats[e.cat || 'Other'] || 0) + num(e.amount); });
+    var catList = Object.keys(cats).map(function (c) { return { c: c, a: cats[c] }; }).sort(function (a, b) { return b.a - a.a; });
+    var maxE = Math.max.apply(null, catList.map(function (x) { return x.a; }).concat([1]));
+    fill('expBars', catList.map(function (x) {
+      return barRow(x.c, pct(x.a, t.exp), [{ frac: x.a / maxE, cls: 'soft' }], valNode(money(x.a)));
+    }), 'No salaries or expenses recorded for this period yet.');
+
+    // Cash flow, always all time
+    var cap = num(state.capital), end = cap + all.net;
+    function cf(label, type, amount, share, cls) {
+      var l = el('td', { textContent: label }); l.appendChild(el('small', { textContent: type }));
+      var a = moneyTd(amount); if (share) a.appendChild(el('small', { textContent: share }));
+      return el('tr', { className: cls || '' }, [l, a]);
+    }
+    fill('cashTable', [
+      cf('Initial capital invested', 'Capital', cap),
+      cf('Total sales revenue', 'Inflow (+)', all.rev),
+      cf('Inventory cost (COGS)', 'Outflow (−)', -all.cogs, pct(all.cogs, all.rev) + ' of revenue'),
+      cf('Staff salaries paid', 'Outflow (−)', -all.sal, pct(all.sal, all.rev) + ' of revenue'),
+      cf('Rent, delivery, ads & other', 'Outflow (−)', -all.other, pct(all.other, all.rev) + ' of revenue'),
+      cf('Ending cash balance', 'Net cash', end, cap ? (end >= cap ? '+' : '') + ((end - cap) / cap * 100).toFixed(1) + '% vs capital' : '', 'net')
+    ]);
+
+    // Months
+    var months = monthsWithData(), sum = { rev: 0, cogs: 0, sal: 0, other: 0, net: 0 }, trend = [];
+    fill('yearBody', months.map(function (k) {
+      var x = totals(k); ['rev', 'cogs', 'sal', 'other', 'net'].forEach(function (f) { sum[f] += x[f]; });
+      trend.push({ k: k, net: x.net });
+      return el('tr', { className: 'jump', data: { month: k } }, [td(monthName(k) + (k === period ? ' •' : '')), td(money(x.rev)), td(money(x.cogs)), td(money(x.sal)), td(money(x.other)), moneyTd(x.net)]);
+    }));
+    if (!months.length) $('yearBody').appendChild(emptyRow(6, 'Nothing recorded yet.'));
+    fill('yearFoot', [el('tr', {}, [td('Total'), td(money(sum.rev)), td(money(sum.cogs)), td(money(sum.sal)), td(money(sum.other)), moneyTd(sum.net)])]);
+    var maxN = Math.max.apply(null, trend.map(function (x) { return Math.abs(x.net); }).concat([1]));
+    fill('trend', trend.slice(-12).map(function (x) {
+      var p = x.k.split('-');
+      return barRow(MONTHS[+p[1] - 1].slice(0, 3) + ' ' + p[0], '', [{ frac: Math.abs(x.net) / maxN, cls: x.net < 0 ? 'neg' : '' }], valNode(money(x.net), '', x.net < 0));
+    }), 'Nothing recorded yet.');
+  }
+
+  function productOptions() { return state.products.map(function (p) { return [p.id, p.name || '(no name)']; }); }
+  function renderSales() {
+    var keep = $('sProd').value, sp = $('sProd'); sp.textContent = '';
+    sp.appendChild(el('option', { value: '', textContent: state.products.length ? 'Choose a product…' : 'Add products first' }));
+    productOptions().forEach(function (o) { sp.appendChild(el('option', { value: o[0], textContent: o[1] })); });
+    sp.value = product(keep) ? keep : '';
+    if (!$('sDate').value) $('sDate').value = today();
+    preview();
+
+    var list = state.sales.filter(function (s) { return inPeriod(s, period); }).sort(byDateDesc), t = totals(period);
+    $('salesCount').textContent = list.length + (list.length === 1 ? ' sale' : ' sales') + (period === 'all' ? '' : ' in ' + monthName(period));
+    fill('salesBody', list.map(function (s) {
+      var q = num(s.qty), opts = productOptions();
+      if (!product(s.pid)) opts.unshift([s.pid || '', saleName(s)]);
+      var ps = selectEl(opts, s.pid || '', { kind: 'sale', id: s.id, f: 'pid' });
+      return el('tr', {}, [td('SAL-' + pad(s.n || 0, 3), 'id'),
+        el('td', {}, [field('sale', s.id, 'date', s.date, 'date', 'date')]), el('td', {}, [ps]),
+        el('td', {}, [field('sale', s.id, 'qty', s.qty, 'qty', 'num')]), el('td', {}, [field('sale', s.id, 'price', s.price, 'num', 'num')]),
+        td(money(q * num(s.price))), td(money(q * num(s.cost))), moneyTd(q * (num(s.price) - num(s.cost))),
+        el('td', {}, [field('sale', s.id, 'note', s.note, 'note')]), delBtn('sale', s.id, 'Remove sale')]);
+    }));
+    if (!list.length) $('salesBody').appendChild(emptyRow(10, 'No sales recorded' + (period === 'all' ? ' yet.' : ' in ' + monthName(period) + '.')));
+    fill('salesFoot', [el('tr', {}, [td('Totals'), td(''), td(''), td(t.units.toLocaleString('en-GB')), td(''), td(money(t.rev)), td(money(t.cogs)), moneyTd(t.gross), td(''), td('', 'noprint')])]);
+  }
+  function preview() {
+    var p = product($('sProd').value), q = num($('sQty').value), price = num($('sPrice').value);
+    $('salePreview').textContent = p ? 'Revenue ' + money(q * price) + ' · cost of goods ' + money(q * num(p.cost)) + ' · gross profit ' + money(q * (price - num(p.cost))) : '';
+  }
+
+  function renderExpenses() {
+    if (!$('eCat').options.length) {
+      CATS.forEach(function (c) { $('eCat').appendChild(el('option', { value: c, textContent: c })); });
+      METHODS.forEach(function (c) { $('eMethod').appendChild(el('option', { value: c, textContent: c })); });
+    }
+    if (!$('eDate').value) $('eDate').value = today();
+    var list = state.expenses.filter(function (e) { return inPeriod(e, period); }).sort(byDateDesc), t = totals(period);
+    $('expCount').textContent = list.length + (list.length === 1 ? ' entry' : ' entries') + (period === 'all' ? '' : ' in ' + monthName(period));
+    fill('expBody', list.map(function (e) {
+      var cats = CATS.indexOf(e.cat) < 0 ? CATS.concat([e.cat]) : CATS, methods = METHODS.indexOf(e.method) < 0 ? METHODS.concat([e.method || '']) : METHODS;
+      return el('tr', {}, [td('EXP-' + pad(e.n || 0, 3), 'id'),
+        el('td', {}, [field('exp', e.id, 'date', e.date, 'date', 'date')]),
+        el('td', {}, [selectEl(cats.map(function (c) { return [c, c]; }), e.cat, { kind: 'exp', id: e.id, f: 'cat' })]),
+        el('td', {}, [field('exp', e.id, 'payee', e.payee, 'note')]), el('td', {}, [field('exp', e.id, 'desc', e.desc, 'note')]),
+        el('td', {}, [field('exp', e.id, 'amount', e.amount, 'num', 'num')]),
+        el('td', {}, [selectEl(methods.map(function (c) { return [c, c]; }), e.method, { kind: 'exp', id: e.id, f: 'method' })]),
+        delBtn('exp', e.id, 'Remove expense')]);
+    }));
+    if (!list.length) $('expBody').appendChild(emptyRow(8, 'No salaries or expenses recorded' + (period === 'all' ? ' yet.' : ' in ' + monthName(period) + '.')));
+    fill('expFoot', [el('tr', {}, [td('Totals'), td(''), td(''), td(''), td('Salaries ' + money(t.sal) + ' · other ' + money(t.other)), td(money(t.exp)), td(''), td('', 'noprint')])]);
+  }
+
+  function renderProducts() {
+    fill('prodBody', state.products.map(function (p, i) {
+      var up = num(p.price) - num(p.cost);
+      return el('tr', {}, [td('SKU-' + pad(i + 1, 2), 'id'), el('td', {}, [field('prod', p.id, 'name', p.name, 'name')]),
+        el('td', {}, [field('prod', p.id, 'price', p.price, 'num', 'num')]), el('td', {}, [field('prod', p.id, 'cost', p.cost, 'num', 'num')]),
+        moneyTd(up), td(pct(up, num(p.price))), delBtn('prod', p.id, 'Remove product')]);
+    }));
+    if (!state.products.length) $('prodBody').appendChild(emptyRow(7, 'No products yet.'));
   }
 
   function render() {
-    var m = month(current, true);
-    $('monthLabel').textContent = $('plMonth').textContent = $('entryMonth').textContent = monthName(current);
-    var pb = $('prodBody'); pb.textContent = '';
-    state.products.forEach(function (p) {
-      pb.appendChild(el('tr', { data: { pid: p.id } }, [
-        el('td', {}, [inp('name', p.name, { f: 'name' })]),
-        el('td', {}, [inp('num', p.price, { f: 'price' }, 'num')]),
-        el('td', {}, [inp('num', p.cost, { f: 'cost' }, 'num')]),
-        el('td', {}, [inp('units', m.units[p.id] || '', { f: 'units' }, 'num')]),
-        el('td', { className: 'sales' }), el('td', { className: 'cost' }), el('td', { className: 'profit' }),
-        el('td', { className: 'noprint' }, [el('button', { className: 'x', textContent: '×', title: 'Remove product', data: { del: 'prod' } })])
-      ]));
-    });
-    var eb = $('expBody'); eb.textContent = '';
-    m.expenses.forEach(function (e) {
-      eb.appendChild(el('tr', { data: { eid: e.id } }, [
-        el('td', {}, [inp('name', e.name, { f: 'ename' })]),
-        el('td', {}, [inp('num', e.amount || '', { f: 'amount' }, 'num')]),
-        el('td', { className: 'noprint' }, [el('button', { className: 'x', textContent: '×', title: 'Remove expense', data: { del: 'exp' } })])
-      ]));
-    });
-    recalc();
+    renderPeriod();
+    TABS.forEach(function (t) { $('tab-' + t).hidden = t !== tab; });
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
+    renderDash(); renderSales(); renderExpenses(); renderProducts();
+    if (document.activeElement !== $('capital')) $('capital').value = num(state.capital) || '';
+  }
+  // Redraw after the browser has moved focus, then put the cursor back where the person was.
+  var pending = null;
+  function refresh() {
+    clearTimeout(pending);
+    pending = setTimeout(function () {
+      var a = document.activeElement, d = a && a.dataset, key = d && d.kind ? '[data-kind="' + d.kind + '"][data-id="' + d.id + '"][data-f="' + d.f + '"]' : null;
+      render();
+      if (key) { var n = document.querySelector(key); if (n) n.focus(); }
+    }, 0);
   }
 
-  function barRow(label, sub, frac, value, cls) {
-    var lab = el('div', { className: 'lab', textContent: label || '(no name)' });
-    if (sub) lab.appendChild(el('small', { textContent: ' ' + sub }));
-    var fill = el('div', { className: 'fill' + (cls ? ' ' + cls : '') }); fill.style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + '%';
-    var val = el('div', { className: 'val' + (cls === 'neg' ? ' neg' : ''), textContent: value });
-    return el('div', { className: 'row' }, [lab, el('div', { className: 'track' }, [fill]), val]);
-  }
-  function fillBars(id, rows, emptyText) {
-    var box = $(id); box.textContent = '';
-    if (!rows.length) { box.appendChild(el('p', { className: 'empty', textContent: emptyText })); return; }
-    rows.forEach(function (r) { box.appendChild(r); });
-  }
-  function dashboard(m, t) {
-    $('cGross').textContent = money(t.gross); $('cUnits').textContent = t.units.toLocaleString('en-GB');
-    $('cMargin').textContent = t.rev ? (t.net / t.rev * 100).toFixed(1) + '%' : '–';
-    var prev = shift(current, -1), sub = '';
-    if (state.months[prev] && hasData(prev)) {
-      var diff = t.net - totals(prev).net;
-      sub = diff === 0 ? 'Same as ' + monthName(prev) : (diff > 0 ? '▲ ' : '▼ ') + money(Math.abs(diff)) + (diff > 0 ? ' more than ' : ' less than ') + monthName(prev);
+  // ---------- events ----------
+  function find(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
+  document.addEventListener('change', function (ev) {
+    var d = ev.target.dataset || {}, v = ev.target.value;
+    if (!d.kind) return;
+    if (d.kind === 'sale') {
+      var s = find(state.sales, d.id); if (!s) return;
+      if (d.f === 'pid') { var p = product(v); if (!p) return; s.pid = p.id; s.name = p.name; s.price = num(p.price); s.cost = num(p.cost); }
+      else if (d.f === 'date') { if (v) s.date = v; }
+      else if (d.f === 'note') s.note = v;
+      else s[d.f] = Math.max(0, num(v));
+    } else if (d.kind === 'exp') {
+      var e = find(state.expenses, d.id); if (!e) return;
+      if (d.f === 'amount') e.amount = Math.max(0, num(v)); else if (d.f === 'date') { if (v) e.date = v; } else e[d.f] = v;
+    } else if (d.kind === 'prod') {
+      var pr = product(d.id); if (!pr) return;
+      if (d.f === 'name') pr.name = v; else pr[d.f] = Math.max(0, num(v));
     }
-    $('heroSub').textContent = sub;
-
-    var sold = state.products.map(function (p) { var u = num(m.units[p.id]); return { p: p, u: u, profit: u * (num(p.price) - num(p.cost)) }; })
-      .filter(function (x) { return x.u > 0; }).sort(function (a, b) { return b.profit - a.profit; }).slice(0, 5);
-    var maxP = Math.max.apply(null, sold.map(function (x) { return Math.abs(x.profit); }).concat([1]));
-    fillBars('best', sold.map(function (x) {
-      return barRow(x.p.name, '× ' + x.u, Math.abs(x.profit) / maxP, money(x.profit), x.profit < 0 ? 'neg' : '');
-    }), 'No sales entered for this month yet.');
-
-    var exps = m.expenses.filter(function (e) { return num(e.amount) > 0; }).sort(function (a, b) { return num(b.amount) - num(a.amount); });
-    var maxE = Math.max.apply(null, exps.map(function (e) { return num(e.amount); }).concat([1]));
-    fillBars('expBreak', exps.map(function (e) {
-      return barRow(e.name, Math.round(num(e.amount) / t.exp * 100) + '%', num(e.amount) / maxE, money(num(e.amount)), 'soft');
-    }), 'No expenses entered for this month yet.');
-  }
-
-  function signed(node, n) { node.textContent = money(n); node.classList.toggle('neg', n < 0); }
-  function recalc() {
-    var m = month(current, true), t = totals(current);
-    Array.prototype.forEach.call($('prodBody').rows, function (tr) {
-      var p = state.products.filter(function (x) { return x.id === tr.dataset.pid; })[0]; if (!p) return;
-      var u = num(m.units[p.id]);
-      tr.querySelector('.sales').textContent = money(u * num(p.price));
-      tr.querySelector('.cost').textContent = money(u * num(p.cost));
-      signed(tr.querySelector('.profit'), u * (num(p.price) - num(p.cost)));
-    });
-    $('tUnits').textContent = t.units.toLocaleString('en-GB');
-    $('tSales').textContent = money(t.rev); $('tCost').textContent = money(t.cogs); signed($('tProfit'), t.gross);
-    $('tExp').textContent = money(t.exp);
-    $('cRev').textContent = $('pRev').textContent = money(t.rev);
-    $('cCogs').textContent = $('pCogs').textContent = money(t.cogs);
-    $('cExp').textContent = $('pExp').textContent = money(t.exp);
-    signed($('pGross'), t.gross);
-    var label = t.net < 0 ? 'Net loss' : 'Net profit';
-    $('netLabel').textContent = $('pNetLabel').textContent = label;
-    $('cNet').textContent = money(t.net); $('netCard').classList.toggle('neg', t.net < 0);
-    $('pNet').textContent = money(t.net); $('pNet').className = t.net < 0 ? 'neg' : 'pos';
-
-    dashboard(m, t);
-    var yb = $('yearBody'); yb.textContent = '';
-    var trend = [];
-    var sum = { rev: 0, cogs: 0, exp: 0, net: 0 };
-    Object.keys(state.months).filter(function (k) { return k === current || hasData(k); }).sort().forEach(function (k) {
-      var x = totals(k); sum.rev += x.rev; sum.cogs += x.cogs; sum.exp += x.exp; sum.net += x.net;
-      trend.push({ k: k, net: x.net });
-      var netTd = el('td'); signed(netTd, x.net);
-      yb.appendChild(el('tr', { className: 'jump', data: { month: k } }, [
-        el('td', { textContent: monthName(k) + (k === current ? ' •' : '') }),
-        el('td', { textContent: money(x.rev) }), el('td', { textContent: money(x.cogs) }),
-        el('td', { textContent: money(x.exp) }), netTd ]));
-    });
-    $('yRev').textContent = money(sum.rev); $('yCogs').textContent = money(sum.cogs);
-    $('yExp').textContent = money(sum.exp); signed($('yNet'), sum.net);
-    var maxN = Math.max.apply(null, trend.map(function (x) { return Math.abs(x.net); }).concat([1]));
-    fillBars('trend', trend.slice(-12).map(function (x) {
-      var p = x.k.split('-');
-      return barRow(MONTHS[+p[1] - 1].slice(0, 3) + ' ' + p[0], '', Math.abs(x.net) / maxN, money(x.net), x.net < 0 ? 'neg' : '');
-    }), 'Nothing recorded yet.');
-    save();
-  }
-
-  document.addEventListener('input', function (ev) {
-    var t = ev.target, f = t.dataset && t.dataset.f; if (!f) return;
-    var tr = t.closest('tr'), m = month(current, true);
-    if (tr.dataset.pid) {
-      var p = state.products.filter(function (x) { return x.id === tr.dataset.pid; })[0]; if (!p) return;
-      if (f === 'name') p.name = t.value;
-      else if (f === 'units') { var u = Math.max(0, num(t.value)); if (u) m.units[p.id] = u; else delete m.units[p.id]; }
-      else p[f] = Math.max(0, num(t.value));
-    } else if (tr.dataset.eid) {
-      var e = m.expenses.filter(function (x) { return x.id === tr.dataset.eid; })[0]; if (!e) return;
-      if (f === 'ename') e.name = t.value; else e.amount = Math.max(0, num(t.value));
-    }
-    recalc(); touch();
+    touch();
   });
-
   document.addEventListener('click', function (ev) {
-    var t = ev.target, tr = t.closest && t.closest('tr');
-    if (t.dataset && t.dataset.del === 'prod') {
-      var p = state.products.filter(function (x) { return x.id === tr.dataset.pid; })[0];
-      if (!confirm('Remove "' + (p.name || 'this product') + '" and its units in every month?')) return;
-      state.products = state.products.filter(function (x) { return x.id !== p.id; });
-      Object.keys(state.months).forEach(function (k) { delete state.months[k].units[p.id]; });
-      render(); touch();
-    } else if (t.dataset && t.dataset.del === 'exp') {
-      var m = month(current, true);
-      m.expenses = m.expenses.filter(function (x) { return x.id !== tr.dataset.eid; });
-      render(); touch();
-    } else if (tr && tr.dataset.month) { current = tr.dataset.month; render(); window.scrollTo(0, 0); }
+    var d = ev.target.dataset || {}, tr = ev.target.closest && ev.target.closest('tr');
+    if (d.del === 'sale') { if (confirm('Remove this sale?')) { state.sales = state.sales.filter(function (x) { return x.id !== d.id; }); touch(); } }
+    else if (d.del === 'exp') { if (confirm('Remove this expense?')) { state.expenses = state.expenses.filter(function (x) { return x.id !== d.id; }); touch(); } }
+    else if (d.del === 'prod') {
+      var p = product(d.id), used = state.sales.filter(function (s) { return s.pid === d.id; }).length;
+      if (!confirm('Remove "' + (p.name || 'this product') + '" from the catalog?' + (used ? ' Its ' + used + ' recorded sale(s) stay in the log.' : ''))) return;
+      state.sales.forEach(function (s) { if (s.pid === d.id) s.name = p.name; });
+      state.products = state.products.filter(function (x) { return x.id !== d.id; }); touch();
+    }
+    else if (tr && tr.dataset.month) { setPeriod(tr.dataset.month); window.scrollTo(0, 0); }
+    else if (d.tab) { tab = d.tab; try { sessionStorage.setItem('joandy-tab', tab); } catch (e) {} render(); window.scrollTo(0, 0); }
   });
+  function setPeriod(p) { period = p; try { sessionStorage.setItem('joandy-period', p); } catch (e) {} render(); }
+  $('period').onchange = function () { setPeriod(this.value); };
 
-  $('prev').onclick = function () { current = shift(current, -1); render(); };
-  $('next').onclick = function () { current = shift(current, 1); render(); };
+  $('sProd').onchange = function () { var p = product(this.value); $('sPrice').value = p ? num(p.price) : ''; preview(); };
+  $('sQty').oninput = $('sPrice').oninput = preview;
+  $('saleForm').onsubmit = function (ev) {
+    ev.preventDefault();
+    var p = product($('sProd').value), q = num($('sQty').value);
+    if (!p || q <= 0 || !$('sDate').value) return;
+    state.seq.sale = num(state.seq.sale) + 1;
+    state.sales.push({ id: uid(), n: state.seq.sale, date: $('sDate').value, pid: p.id, name: p.name, qty: q, price: Math.max(0, num($('sPrice').value)), cost: num(p.cost), note: $('sNote').value.trim() });
+    if (period !== 'all') period = $('sDate').value.slice(0, 7); // keep the new sale in view
+    $('sQty').value = 1; $('sNote').value = ''; $('sProd').value = ''; $('sPrice').value = '';
+    touch();
+  };
+  $('expForm').onsubmit = function (ev) {
+    ev.preventDefault();
+    var a = num($('eAmt').value); if (a <= 0 || !$('eDate').value) return;
+    state.seq.exp = num(state.seq.exp) + 1;
+    state.expenses.push({ id: uid(), n: state.seq.exp, date: $('eDate').value, cat: $('eCat').value, payee: $('ePayee').value.trim(), desc: $('eDesc').value.trim(), amount: a, method: $('eMethod').value });
+    if (period !== 'all') period = $('eDate').value.slice(0, 7);
+    $('eAmt').value = ''; $('ePayee').value = ''; $('eDesc').value = '';
+    touch();
+  };
   $('addProd').onclick = function () {
-    state.products.push({ id: uid(), name: '', price: 0, cost: 0 }); render(); touch();
-    var rows = $('prodBody').rows; rows[rows.length - 1].querySelector('input').focus();
+    var p = { id: uid(), name: '', price: 0, cost: 0 }; state.products.push(p); touch();
+    setTimeout(function () { var n = document.querySelector('[data-kind="prod"][data-id="' + p.id + '"][data-f="name"]'); if (n) n.focus(); }, 30);
   };
-  $('addExp').onclick = function () {
-    month(current, true).expenses.push({ id: uid(), name: '', amount: 0 }); render(); touch();
-    var rows = $('expBody').rows; rows[rows.length - 1].querySelector('input').focus();
-  };
-  $('printBtn').onclick = function () { window.print(); };
+  $('capital').onchange = function () { state.capital = Math.max(0, num(this.value)); touch(); };
+  $('printBtn').onclick = function () { tab = 'dash'; render(); window.print(); };
   $('exportBtn').onclick = function () {
-    var a = el('a', { href: URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' })),
-      download: 'joandy-pnl-backup-' + monthKey(new Date()) + '.json' });
+    var a = el('a', { href: URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' })), download: 'joandy-backup-' + today() + '.json' });
     document.body.appendChild(a); a.click(); a.remove();
   };
   $('importBtn').onclick = function () { $('importFile').click(); };
@@ -449,26 +655,14 @@
       try {
         var s = JSON.parse(r.result);
         if (!valid(s)) throw new Error('bad file');
-        if (!confirm('Replace everything in this browser with the backup?')) return;
-        state = normalize(s); render(); touch();
-      } catch (e) { alert('That file is not a Joandy P&L backup.'); }
+        if (!confirm('Replace everything here with the backup?')) return;
+        state = migrate(s); touch();
+      } catch (e) { alert('That file is not a Joandy backup.'); }
     };
     r.readAsText(file); this.value = '';
   };
 
-  function showTab(name) {
-    ['dash', 'entries'].forEach(function (t) { $('tab-' + t).hidden = t !== name; });
-    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
-      b.setAttribute('aria-selected', String(b.dataset.tab === name));
-    });
-    try { sessionStorage.setItem('joandy-tab', name); } catch (e) {}
-  }
-  document.querySelector('.tabs').addEventListener('click', function (ev) {
-    if (ev.target.dataset.tab) { showTab(ev.target.dataset.tab); window.scrollTo(0, 0); }
-  });
-  try { if (sessionStorage.getItem('joandy-tab') === 'entries') showTab('entries'); } catch (e) {}
-
-  // ---- Online saving (Firebase) ----
+  // ---------- online saving (Firebase) ----------
   var FIREBASE = {
     apiKey: "AIzaSyCxB2ihj9dAFfzOFzOlmVdjbnwRDpwOUn8",
     authDomain: "joandy-pnl-projection.firebaseapp.com",
@@ -480,7 +674,7 @@
   };
   var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
   function status(msg) { $('syncStatus').textContent = msg; }
-  var cloud = { ref: null, dirty: false, timer: null, setDoc: null,
+  var cloud = { ref: null, dirty: false, timer: null, set: null, who: '',
     push: function () {
       if (!cloud.ref) return;
       cloud.dirty = true; status('Saving online…');
@@ -489,13 +683,13 @@
     flush: function () {
       if (!cloud.ref) return;
       var stamp = state.updatedAt || 0;
-      return cloud.setDoc(cloud.ref, { json: JSON.stringify(state), updatedAt: stamp }).then(function () {
+      return cloud.set(cloud.ref, { json: JSON.stringify(state), updatedAt: stamp }).then(function () {
         if ((state.updatedAt || 0) === stamp) { cloud.dirty = false; status('Saved online ✓ ' + cloud.who); }
       }).catch(function (e) { status('Could not save online (' + (e.code || 'error') + '). Saved on this device.'); });
     }
   };
   function adopt(json) {
-    try { var s = JSON.parse(json); if (!valid(s)) return false; state = normalize(s); render(); return true; }
+    try { var s = JSON.parse(json); if (!valid(s)) return false; state = migrate(s); save(); render(); return true; }
     catch (e) { return false; }
   }
 
@@ -504,7 +698,7 @@
     .then(function (m) {
       var A = m[1], F = m[2];
       var app = m[0].initializeApp(FIREBASE), auth = A.getAuth(app), db = F.getDatabase(app), unsub = null;
-      cloud.setDoc = F.set;
+      cloud.set = F.set;
       $('signIn').onclick = function () {
         A.signInWithPopup(auth, new A.GoogleAuthProvider()).catch(function (e) {
           if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
@@ -535,14 +729,18 @@
         $('loginForm').hidden = !!user; $('signOut').hidden = !user;
         if (!user) { status('Not signed in. Saved on this device only.'); return; }
         cloud.who = user.email ? '(' + user.email.replace('@' + FIREBASE.authDomain, '') + ')' : '';
-        var ref = F.ref(db, 'business/main'); // one shared set of figures for everyone allowed in the rules
+        // One shared set of figures for everyone allowed in the database rules.
+        var ref = F.ref(db, 'business/v2'), oldRef = F.ref(db, 'business/main');
         status('Loading your saved figures…');
         F.get(ref).then(function (snap) {
+          // Nothing in the new place yet: fall back to figures saved by the earlier version of the app.
+          return snap.exists() ? snap : F.get(oldRef);
+        }).then(function (snap) {
           var d = snap.exists() ? snap.val() : null;
           cloud.ref = ref;
           // Whichever copy was edited last wins: the online one or this device's.
-          if (d && d.json && (d.updatedAt || 0) >= (state.updatedAt || 0) && adopt(d.json)) status('Saved online ✓ ' + cloud.who);
-          else return cloud.flush();
+          if (d && d.json && (d.updatedAt || 0) >= (state.updatedAt || 0)) adopt(d.json);
+          return cloud.flush();
         }).then(function () {
           unsub = F.onValue(ref, function (s) {
             if (cloud.dirty) return;
