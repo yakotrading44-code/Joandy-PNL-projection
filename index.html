@@ -108,7 +108,9 @@
   td select { min-width: 130px; } td.id { color: var(--muted); font-size: 12px; }
   h2 small { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
   .capital { display: flex; align-items: center; gap: 8px; font-weight: 600; } .capital input { width: 160px; font-size: 18px; }
-  .pl td small { color: var(--muted); margin-left: 6px; }
+  .pl td small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; margin: 0; }
+  .pl td:first-child { white-space: normal; }
+  .pl td { vertical-align: top; }
   td.empty { text-align: left !important; color: var(--muted); padding: 14px 6px; }
   @media (max-width: 640px) { .cards { grid-template-columns: repeat(2, 1fr); } form.entry { grid-template-columns: 1fr 1fr; } .tabs button { font-size: 12.5px; } .heroside b { font-size: 20px; } }
 </style>
@@ -287,7 +289,7 @@
   // ---------- helpers ----------
   function uid() { return Math.random().toString(36).slice(2, 9); }
   function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
-  function money(n) { return n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function money(n) { n = n || 0; /* never show -0.00 */ return n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function pct(a, b) { return b ? (a / b * 100).toFixed(1) + '%' : '–'; }
   function pad(n, w) { return String(n).padStart(w, '0'); }
   function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1, 2) + '-' + pad(d.getDate(), 2); }
